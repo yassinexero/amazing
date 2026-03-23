@@ -194,13 +194,13 @@ class MazeVisual:
         """
         pos = (col, row)
         if pos == self.gen.entry:
-            return ENTRY + " E " + RESET
+            return ENTRY + "███" + RESET
         if pos == self.gen.exit_:
-            return EXIT  + " X " + RESET
+            return EXIT  + "███" + RESET
         if pos in self.gen._pattern_cells:
             return PAT_BG + "###" + RESET
         if self.show_path and pos in self._path_cells():
-            return PATH + " . " + RESET
+            return PATH + " * " + RESET
         return "   "
 
     # ── Actions ───────────────────────────────────────────────────────────
