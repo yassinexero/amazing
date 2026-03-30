@@ -31,9 +31,6 @@ from constants import (
     ALL_WALLS,
     DIRECTIONS,
     DIR_LETTER,
-    PATTERN_42,
-    PATTERN_HEIGHT,
-    PATTERN_WIDTH,
     pattern_cells,
 )
 
@@ -76,19 +73,19 @@ class MazeGenerator:
             perfect: Whether to generate a perfect maze.
             seed:    Optional random seed for reproducible generation.
         """
-        self.width   = width
-        self.height  = height
-        self.entry   = entry
-        self.exit_   = exit_
+        self.width = width
+        self.height = height
+        self.entry = entry
+        self.exit_ = exit_
         self.perfect = perfect
-        self.seed    = seed
+        self.seed = seed
 
-        self.grid:           list[list[int]]          = []
-        self.solution:       str                      = ""
-        self._visited:       list[list[bool]]         = []
-        self._pattern_cells: set[tuple[int, int]]     = set()
+        self.grid: list[list[int]] = []
+        self.solution: str = ""
+        self._visited: list[list[bool]] = []
+        self._pattern_cells: set[tuple[int, int]] = set()
 
-    # ── Public API ────────────────────────────────────────────────────────────
+    # ── Public API ─────────────────────────────────────────────────────────
 
     def generate(self) -> None:
         """Generate the maze.
@@ -97,7 +94,7 @@ class MazeGenerator:
         1. Initialize grid — all walls closed.
         2. Reserve "42" pattern cells so DFS skips them.
         3. Run DFS from entry to carve passages.
-        4. Remove extra walls if not perfect mode.
+        4. If non-perfect mode, add extra passages to create loops.
         5. Fix any 3×3 fully open areas.
         6. Solve with BFS to get the shortest path.
         """
@@ -107,11 +104,11 @@ class MazeGenerator:
         self._visited[self.entry[1]][self.entry[0]] = True
         self._dfs(self.entry[0], self.entry[1])
         if not self.perfect:
-            self._remove_extra_walls()
+            self._add_extra_passages()
         self._fix_open_areas()
         self.solution = self._bfs_solve()
 
-    # ── Grid initialization ───────────────────────────────────────────────────
+    # ── Grid initialization ────────────────────────────────────────────────
 
     def _init_grid(self) -> None:
         """Initialize the grid with all walls closed and visited map False."""
@@ -122,7 +119,7 @@ class MazeGenerator:
             [False] * self.width for _ in range(self.height)
         ]
 
-    # ── "42" pattern reservation ──────────────────────────────────────────────
+    # ── "42" pattern reservation ───────────────────────────────────────────
 
     def _reserve_pattern(self) -> None:
         """Reserve "42" pattern cells before DFS runs.
@@ -133,9 +130,9 @@ class MazeGenerator:
         self._pattern_cells = pattern_cells(self.width, self.height)
         for gx, gy in self._pattern_cells:
             self._visited[gy][gx] = True
-            self.grid[gy][gx]     = ALL_WALLS
+            self.grid[gy][gx] = ALL_WALLS
 
-    # ── DFS ───────────────────────────────────────────────────────────────────
+    # ── DFS ────────────────────────────────────────────────────────────────
 
     def _dfs(self, start_x: int, start_y: int) -> None:
         """Run iterative DFS from the given start cell to carve passages.
@@ -158,7 +155,7 @@ class MazeGenerator:
             for dx, dy, wall_cur, wall_nbr in dirs:
                 nx, ny = x + dx, y + dy
                 if self._in_bounds(nx, ny) and not self._visited[ny][nx]:
-                    self.grid[y][x]   &= ~wall_cur
+                    self.grid[y][x] &= ~wall_cur
                     self.grid[ny][nx] &= ~wall_nbr
                     self._visited[ny][nx] = True
                     stack.append((nx, ny))
@@ -168,42 +165,41 @@ class MazeGenerator:
             if not moved:
                 stack.pop()
 
-    # ── Non-perfect mode ──────────────────────────────────────────────────────
+    # ── Non-perfect mode: extra passages ───────────────────────────────────
 
-    def _remove_extra_walls(self) -> None:
-        """Remove ~15% of internal walls to create loops.
+    def _add_extra_passages(self, density: float = 0.2) -> None:
+        """Add random extra passages to create loops in non-perfect mode.
 
-        Skips pattern cells. Removes only East walls (and matching West
-        on the neighbor) to keep the logic simple.
+        Iterates through all cells and randomly carves additional passages
+        between visited cells, creating multiple solution paths. This is only
+        called when perfect=False.
         """
-        removals    = max(1, (self.width * self.height) // 7)
-        attempts    = 0
-        max_attempts = removals * 10
+        for y in range(self.height):
+            for x in range(self.width):
+                if (x, y) in self._pattern_cells:
+                    continue
 
-        while removals > 0 and attempts < max_attempts:
-            attempts += 1
-            x = random.randint(0, self.width - 2)
-            y = random.randint(0, self.height - 1)
+                for dx, dy, wall_cur, wall_nbr in [
+                    (1, 0, EAST, WEST),
+                    (0, 1, SOUTH, NORTH),
+                ]:
+                    nx, ny = x + dx, y + dy
 
-            if (x, y) in self._pattern_cells:
-                continue
-            if (x + 1, y) in self._pattern_cells:
-                continue
+                    if not self._in_bounds(nx, ny):
+                        continue
+                    if (nx, ny) in self._pattern_cells:
+                        continue
+                    if not (self.grid[y][x] & wall_cur):
+                        continue
 
-            if self.grid[y][x] & EAST:
-                self.grid[y][x]     &= ~EAST
-                self.grid[y][x + 1] &= ~WEST
-                removals -= 1
+                    if random.random() < density:
+                        self.grid[y][x] &= ~wall_cur
+                        self.grid[ny][nx] &= ~wall_nbr
 
-    # ── 3×3 open area fix ────────────────────────────────────────────────────
+    # ── 3×3 open area fix ─────────────────────────────────────────────────
 
     def _is_open_area(self, x: int, y: int) -> bool:
-        """Return True if the 3×3 block at (x, y) has no interior walls.
-
-        Args:
-            x: Top-left x of the 3×3 block.
-            y: Top-left y of the 3×3 block.
-        """
+        """Return True if the 3×3 block at (x, y) has no interior walls."""
         for row in range(y, y + 3):
             for col in range(x, x + 3):
                 if col + 1 < x + 3 and self.grid[row][col] & EAST:
@@ -220,10 +216,10 @@ class MazeGenerator:
                     cx, cy = x + 1, y + 1
                     if (cx, cy) not in self._pattern_cells:
                         if cy + 1 < self.height:
-                            self.grid[cy][cx]     |= SOUTH
+                            self.grid[cy][cx] |= SOUTH
                             self.grid[cy + 1][cx] |= NORTH
 
-    # ── BFS solver ───────────────────────────────────────────────────────────
+    # ── BFS solver ────────────────────────────────────────────────────────
 
     def _bfs_solve(self) -> str:
         """Find the shortest path from entry to exit using BFS.
@@ -233,9 +229,11 @@ class MazeGenerator:
             or an empty string if no path exists.
         """
         start = self.entry
-        goal  = self.exit_
+        goal = self.exit_
         queue: deque[tuple[int, int]] = deque([start])
-        came_from: dict[tuple[int, int], tuple[tuple[int, int], str] | None] = {
+        came_from: dict[
+            tuple[int, int], tuple[tuple[int, int], str] | None
+            ] = {
             start: None
         }
 
@@ -251,6 +249,9 @@ class MazeGenerator:
                     continue
                 if (nx, ny) in came_from:
                     continue
+                # previous = (x, y)
+                # direction = DIR_LETTER[(dx, dy)]
+                # came_from[(nx, ny)] = (previous, direction)
                 came_from[(nx, ny)] = ((x, y), DIR_LETTER[(dx, dy)])
                 queue.append((nx, ny))
 
@@ -266,7 +267,7 @@ class MazeGenerator:
         path.reverse()
         return "".join(path)
 
-    # ── Helper ────────────────────────────────────────────────────────────────
+    # ── Helper ─────────────────────────────────────────────────────────────
 
     def _in_bounds(self, x: int, y: int) -> bool:
         """Return True if (x, y) is inside the maze grid.
