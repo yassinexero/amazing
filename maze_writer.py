@@ -10,6 +10,7 @@ Writes the generated maze to a file using the required format:
 """
 
 import sys
+from typing import TextIO
 from maze_generator import MazeGenerator
 
 
@@ -32,7 +33,7 @@ def write_maze(generator: MazeGenerator, filepath: str) -> None:
         sys.exit(1)
 
 
-def _write_grid(f: object, generator: MazeGenerator) -> None:
+def _write_grid(f: TextIO, generator: MazeGenerator) -> None:
     """Write the hex grid rows to the file.
 
     Each row is written as a string of uppercase hex digits (one per cell),
@@ -44,11 +45,11 @@ def _write_grid(f: object, generator: MazeGenerator) -> None:
     """
     for row in generator.grid:
         line = "".join(format(cell, "X") for cell in row)
-        f.write(line + "\n")  # type: ignore[union-attr]
-    f.write("\n")  # type: ignore[union-attr]
+        f.write(line + "\n")
+    f.write("\n")
 
 
-def _write_metadata(f: object, generator: MazeGenerator) -> None:
+def _write_metadata(f: TextIO, generator: MazeGenerator) -> None:
     """Write entry coords, exit coords, and solution path to the file.
 
     Args:
@@ -58,6 +59,6 @@ def _write_metadata(f: object, generator: MazeGenerator) -> None:
     ex, ey = generator.entry
     xx, xy = generator.exit_
 
-    f.write(f"{ex},{ey}\n")   # type: ignore[union-attr]
-    f.write(f"{xx},{xy}\n")   # type: ignore[union-attr]
-    f.write(generator.solution + "\n")  # type: ignore[union-attr]
+    f.write(f"{ex},{ey}\n")
+    f.write(f"{xx},{xy}\n")
+    f.write(generator.solution + "\n")

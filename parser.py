@@ -77,7 +77,7 @@ def _parse_pairs(lines: list[str]) -> dict[str, str]:
             print(f"Error: Line {i} is not a valid KEY=VALUE pair: '{stripped}'")
             sys.exit(1)
         key, _, value = stripped.partition("=")
-        pairs[key.strip()] = value.strip()
+        pairs[key.strip().upper()] = value.strip()
     return pairs
 
 
@@ -90,6 +90,12 @@ def _validate_pairs(pairs: dict[str, str]) -> None:
     Raises:
         SystemExit: If any mandatory key is missing.
     """
+    allowed = MANDATORY_KEYS | {"SEED"}
+
+    unknown = pairs.keys() - allowed
+    if unknown:
+        print(f"Error: Unknown config keys")
+        sys.exit(1)
     missing = MANDATORY_KEYS - pairs.keys()
     if missing:
         print(f"Error: Missing mandatory config keys: {', '.join(sorted(missing))}")
