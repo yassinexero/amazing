@@ -1,15 +1,16 @@
 """Visual representation for A-Maze-ing project."""
 
-import os
+
 import sys
 import random
-from maze_generator import MazeGenerator
+from maze_generator import MazeGenerator # to use gen.grid entry exit...
 
 from constants import NORTH, EAST, SOUTH, WEST
-from maze_writer import write_maze
+from maze_writer import write_maze # needed ub _regenerate() must update output file
 
 # ANSI colours
-RESET   = "\033[0m"
+
+RESET = "\033[0m"
 WALL_COLOURS = {
     "1": ("white",   "\033[97m"),
     "2": ("green",   "\033[92m"),
@@ -21,10 +22,10 @@ WALL_COLOURS = {
 }
 
 # Special colours
-PATH    = "\033[96m"   # cyan  — path dot
-ENTRY   = "\033[92m"   # green — E marker
-EXIT    = "\033[91m"   # red   — X marker
-PAT_BG  = "\033[43m\033[30m"  # yellow bg + black text — "42" block
+PATH = "\033[96m"   # cyan  — path dot
+ENTRY = "\033[92m"   # green — E marker
+EXIT = "\033[91m"   # red   — X marker
+PAT_BG = "\033[43m\033[30m"  # yellow bg + black text — "42" block
 
 
 class MazeVisual:
@@ -38,11 +39,11 @@ class MazeVisual:
     """
 
     def __init__(self, gen: MazeGenerator, output_file: str) -> None:
-        self.gen         = gen
+        self.gen = gen
         self.output_file = output_file
-        self.show_path   = False
-        self.wall_col    = "\033[97m"   # default white
-        self.wall_name   = "white"
+        self.show_path = False
+        self.wall_col = "\033[97m"   # default white
+        self.wall_name = "white"
 
     # ── Main loop ────────────────────────────────────────────────────────
 
@@ -53,10 +54,15 @@ class MazeVisual:
             self._draw()
             self._menu()
             choice = input("Choice (1-4): ").strip()
-            if   choice == "1": self._regenerate()
-            elif choice == "2": self.show_path = not self.show_path
-            elif choice == "3": self._pick_colour()
-            elif choice == "4": print("Goodbye!"); sys.exit(0)
+            if choice == "1":
+                self._regenerate()
+            elif choice == "2":
+                self.show_path = not self.show_path
+            elif choice == "3":
+                self._pick_colour()
+            elif choice == "4":
+                print("Goodbye!")
+                sys.exit(0)
 
     # ── Drawing ──────────────────────────────────────────────────────────
 
@@ -100,7 +106,7 @@ class MazeVisual:
 
     def _bottom_row(self) -> str:
         """Build the bottom-border line (south walls of the last row)."""
-        row  = self.gen.height - 1
+        row = self.gen.height - 1
         line = ""
         for col in range(self.gen.width):
             is_pat = (col, row) in self.gen._pattern_cells
@@ -154,7 +160,7 @@ class MazeVisual:
         # Find the neighbour across this wall
         ny = row - 1 if direction == NORTH else row + 1
         other_pat = (col, ny) in self.gen._pattern_cells
-        both_pat  = is_pat and other_pat
+        both_pat = is_pat and other_pat
         if has_wall:
             prefix = PAT_BG if both_pat else ""
             return prefix + self.wall_col + "---" + RESET
@@ -180,7 +186,7 @@ class MazeVisual:
         # Find the neighbour across this wall
         nx = col - 1 if direction == WEST else col + 1
         other_pat = (nx, row) in self.gen._pattern_cells
-        both_pat  = is_pat and other_pat
+        both_pat = is_pat and other_pat
         if has_wall:
             prefix = PAT_BG if both_pat else ""
             return prefix + self.wall_col + "|" + RESET
@@ -196,7 +202,7 @@ class MazeVisual:
         if pos == self.gen.entry:
             return ENTRY + "███" + RESET
         if pos == self.gen.exit_:
-            return EXIT  + "███" + RESET
+            return EXIT + "███" + RESET
         if pos in self.gen._pattern_cells:
             return PAT_BG + "###" + RESET
         if self.show_path and pos in self._path_cells():
@@ -207,10 +213,10 @@ class MazeVisual:
 
     def _regenerate(self) -> None:
         """Reset state, generate a new maze, and update the output file."""
-        self.gen.seed           = random.randint(0, 99999)
-        self.gen.grid           = []
-        self.gen.solution       = ""
-        self.gen._visited       = []
+        self.gen.seed = random.randint(0, 99999)
+        self.gen.grid = []
+        self.gen.solution = ""
+        self.gen._visited = []
         self.gen._pattern_cells = set()
         self.gen.generate()
         write_maze(self.gen, self.output_file)
@@ -234,8 +240,8 @@ class MazeVisual:
         cells: set[tuple[int, int]] = set()
         if not self.gen.solution:
             return cells
-        x, y   = self.gen.entry
-        deltas = {"N": (0,-1), "E": (1,0), "S": (0,1), "W": (-1,0)}
+        x, y = self.gen.entry
+        deltas = {"N": (0, -1), "E": (1, 0), "S": (0, 1), "W": (-1, 0)}
         cells.add((x, y))
         for letter in self.gen.solution:
             dx, dy = deltas[letter]
@@ -246,14 +252,14 @@ class MazeVisual:
 
     def _clear(self) -> None:
         """Clear the terminal screen."""
-        os.system("cls" if os.name == "nt" else "clear")
+        print("\033[2J\033[H", end="")
 
     def _menu(self) -> None:
         """Print the menu."""
         toggle = "Hide" if self.show_path else "Show"
-        print(f"\n=== A-Maze-ing ===")
-        print(f"1. Re-generate maze")
+        print("\n=== A-Maze-ing ===")
+        print("1. Re-generate maze")
         print(f"2. {toggle} shortest path")
         print(f"3. Change wall colour  "
               f"(current: {self.wall_col}{self.wall_name}{RESET})")
-        print(f"4. Quit\n")
+        print("4. Quit\n")
