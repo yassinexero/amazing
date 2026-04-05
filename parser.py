@@ -94,7 +94,7 @@ def _validate_pairs(pairs: dict[str, str]) -> None:
 
     unknown = pairs.keys() - allowed
     if unknown:
-        print(f"Error: Unknown config keys")
+        print(f"Error: Unknown config keys: {', '.join(sorted(unknown))}")
         sys.exit(1)
     missing = MANDATORY_KEYS - pairs.keys()
     if missing:

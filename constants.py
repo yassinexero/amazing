@@ -48,12 +48,12 @@ PATTERN_42: list[list[int]] = [
     [0, 0, 1,  0,  1, 1, 1],
 ]
 
-PATTERN_HEIGHT: int = len(PATTERN_42)      # 7
-PATTERN_WIDTH:  int = len(PATTERN_42[0])   # 9
+PATTERN_HEIGHT: int = len(PATTERN_42)      # 5
+PATTERN_WIDTH:  int = len(PATTERN_42[0])   # 7
 
 # Minimum maze size to fit the pattern with 2-cell buffer on each side
-MIN_MAZE_WIDTH:  int = PATTERN_WIDTH  + 4  # 13
-MIN_MAZE_HEIGHT: int = PATTERN_HEIGHT + 4  # 11
+MIN_MAZE_WIDTH:  int = PATTERN_WIDTH  + 2  # 9
+MIN_MAZE_HEIGHT: int = PATTERN_HEIGHT + 2  # 7
 
 
 def pattern_cells(maze_width: int, maze_height: int) -> set[tuple[int, int]]:
